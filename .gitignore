@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+.env/
+.env.*
+
+# VS Code specific files
+.vscode/
+.history/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Config files with sensitive information
+config/
+
+# Data files (untracked raw/interim data)
+data/raw/
+data/interim/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# MacOS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
