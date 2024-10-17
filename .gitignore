@@ -37,3 +37,6 @@ data/interim/
 
 # Windows specific
 Thumbs.db
+
+# Custom
+start_env.ps1
