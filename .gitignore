@@ -22,10 +22,6 @@ venv/
 # Config files with sensitive information
 config/
 
-# Data files (untracked raw/interim data)
-data/raw/
-data/interim/
-
 # Logs and temporary files
 *.log
 *.tmp
@@ -41,3 +37,6 @@ Thumbs.db
 
 # Custom
 start_env.ps1
+
+# Egg-info files
+*.egg-info/
