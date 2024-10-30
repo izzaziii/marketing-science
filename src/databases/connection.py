@@ -4,6 +4,8 @@ import pymongo.collection
 import pymongo.cursor
 import json
 from pymongo.errors import PyMongoError
+import os
+from datasets.boreport import read_boreport
 
 
 def create_connection(database: str, coll: str) -> pymongo.collection.Collection:
@@ -98,7 +100,68 @@ def insert_to_coll(data: list, coll: pymongo.collection.Collection) -> None:
         raise
 
 
-def main(file_path: str, database: str, collection: str) -> None:
+def import_json_data_to_mongodb() -> None:
+    """
+    Lists JSON files in a specified directory, previews data, and imports the chosen file to MongoDB.
+
+    Steps:
+    1. Lists files in the raw data directory and prompts user to select one.
+    2. Checks if the file is a JSON file.
+    3. Loads and previews the first 5 rows for user confirmation.
+    4. Asks for the MongoDB database and collection name.
+    5. Inserts data into MongoDB using insert_to_coll.
+
+    Raises:
+        FileNotFoundError: If no JSON files are found in the directory.
+        PyMongoError: For MongoDB-related errors.
+    """
+    # Step 1: List available JSON files
+    raw_data_dir = (
+        r"C:\\Users\\izzaz\\Documents\\2 Areas\\GitHub\\marketing-science\\data\\raw"
+    )
+    files = [f for f in os.listdir(raw_data_dir) if f.endswith(".json")]
+
+    if not files:
+        raise FileNotFoundError("No JSON files found in the specified directory.")
+
+    print("Available JSON files:")
+    for i, file_name in enumerate(files, start=1):
+        print(f"{i}. {file_name}")
+
+    file_choice = int(input("Choose a file number: ")) - 1
+    chosen_file = os.path.join(raw_data_dir, files[file_choice])
+
+    # Step 2: Confirm JSON format
+    if not chosen_file.endswith(".json"):
+        print("The chosen file is not a JSON file.")
+        return
+
+    # Step 3: Load and preview data
+    with open(chosen_file, "r") as f:
+        data = json.load(f)
+
+    df_preview = pd.DataFrame(data)
+    print("\nPreview of the data:")
+    print(df_preview.head())
+
+    # Step 4: Get database and collection names from the user
+    database_name = input("Enter MongoDB database name: ")
+    collection_name = input("Enter MongoDB collection name: ")
+
+    # Step 5: Insert data into MongoDB
+    try:
+        coll = create_connection(database_name, collection_name)
+        insert_to_coll(data, coll)
+        print(
+            f"Data from {files[file_choice]} successfully imported to MongoDB collection '{collection_name}' in database '{database_name}'."
+        )
+    except PyMongoError as e:
+        print(f"Failed to insert data into MongoDB. Error: {e}")
+
+
+def import_boreport_to_mongodb(
+    report_type: str, database: str, collection: str
+) -> None:
     """
     Main function to insert sales data from an Excel file into a MongoDB collection.
 
@@ -119,8 +182,7 @@ def main(file_path: str, database: str, collection: str) -> None:
     """
     try:
         # Step 1: Read the Excel file
-        df = pd.read_excel(file_path)
-        print(f"Loaded data from {file_path}. Shape: {df.shape}")
+        df = read_boreport(report_type=report_type)
 
         # Step 2: Transform to JSON format
         json_data = transform_to_json(df)
@@ -140,7 +202,4 @@ def main(file_path: str, database: str, collection: str) -> None:
 
 # Example usage
 if __name__ == "__main__":
-    file_path = r"Z:\FUNNEL with PROBABILITY TRACKING_Teefa.xlsx"
-    database = "deep-diver"
-    collection = "boreport"
-    main(file_path, database, collection)
+    import_json_data_to_mongodb()

@@ -9,7 +9,7 @@ from facebook_business.exceptions import FacebookRequestError
 
 
 def get_configs(
-    path_to_config_file: str = "../auth/config/meta_secrets.json",
+    path_to_config_file: str = "C:\\Users\\izzaz\\Documents\\2 Areas\\GitHub\\marketing-science\\src\\auth\\config\\meta_secrets.json",
 ) -> Optional[Dict[str, Any]]:
     """
     Loads configuration data from a JSON file.
@@ -161,7 +161,7 @@ def export_to_json(data: List[Dict[str, Any]], start_date: str, end_date: str) -
         None
     """
     timestamp = datetime.now().strftime("%Y%m%d-%H%M")
-    filename = f"../../data/raw/{timestamp}_facebookads_{start_date}_{end_date}.json"
+    filename = f"C:\\Users\\izzaz\\Documents\\2 Areas\\GitHub\\marketing-science\\data\\raw\\{timestamp}_facebookads_{start_date}_{end_date}.json"
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
     print(f"Data exported to {filename}")
@@ -208,6 +208,6 @@ def main(
 # Example usage
 if __name__ == "__main__":
     access_token = get_configs()["access_token"]
-    start_date = "2024-10-01"
-    end_date = "2024-10-05"
+    start_date = "2024-10-21"
+    end_date = "2024-10-27"
     main(access_token, start_date, end_date)
