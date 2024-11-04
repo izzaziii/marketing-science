@@ -36,7 +36,7 @@ config/
 Thumbs.db
 
 # Custom
-start_env.ps1
+deepdiver-secrets.json
 
 # Egg-info files
 *.egg-info/
