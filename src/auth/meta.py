@@ -7,7 +7,7 @@ from facebook_business.api import FacebookAdsApi
 
 # Configuration loading function
 def get_configs(
-    path_to_config_file: str = "../auth/config/meta_secrets.json",
+    path_to_config_file: str = r"C:\Users\izzaz\Documents\2 Areas\GitHub\marketing-science\src\auth\config\meta_secrets.json",
 ) -> Optional[Dict[str, Any]]:
     """
     Loads configuration data from a JSON file.
@@ -29,7 +29,7 @@ def get_configs(
 # Function to save updated configuration data
 def save_configs(
     config_data: Dict[str, Any],
-    path_to_config_file: str = "../auth/config/meta_secrets.json",
+    path_to_config_file: str = r"C:\Users\izzaz\Documents\2 Areas\GitHub\marketing-science\src\auth\config\meta_secrets.json",
 ) -> None:
     """
     Saves updated configuration data to a JSON file.
@@ -71,7 +71,7 @@ def initialize_api(access_token: str) -> None:
 
 # Main function to fetch and save the long-lived token
 def main(short_lived_token: str):
-    config_path = "../auth/config/meta_secrets.json"
+    config_path = r"C:\Users\izzaz\Documents\2 Areas\GitHub\marketing-science\src\auth\config\meta_secrets.json"
     configs = get_configs(config_path)
     if configs is None:
         print("Failed to load configuration.")

@@ -3,7 +3,7 @@ $env:PYTHON_HOME = "C:\Users\izzaz\AppData\Local\Programs\Python\Python311"
 $env:PATH = "$env:PYTHON_HOME;$env:PYTHON_HOME\Scripts;$env:PATH"
 
 # Set the Google Application Credentials environment variable
-$env:GOOGLE_APPLICATION_CREDENTIALS = "../marketing-science/deepdiver-secrets.json"
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\Users\izzaz\Documents\2 Areas\GitHub\marketing-science\deep-diver.json"
 
 # Activate the virtual environment
 .venv\Scripts\Activate.ps1

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from databases.connection import transform_to_json
+from databases.insert import transform_to_json
 
 # Global configuration for paths
 CONFIG = {

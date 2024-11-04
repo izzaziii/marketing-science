@@ -36,7 +36,7 @@ config/
 Thumbs.db
 
 # Custom
-deepdiver-secrets.json
+deep-diver.json
 
 # Egg-info files
 *.egg-info/
