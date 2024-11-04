@@ -2,20 +2,11 @@
 A toolkit of reusable Python scripts for marketing data analysis and reporting. Designed to streamline workflows from data processing to visualization, with a modular structure for flexible, efficient, and maintainable analytics.
 
 - [marketing-science](#marketing-science)
-  - [Data Retrieval via `datasets`](#data-retrieval-via-datasets)
-    - [Setup](#setup)
-    - [Configuration](#configuration)
+  - [Setup](#setup)
+  - [Folder Descriptions](#folder-descriptions)
       - [Meta Ads](#meta-ads)
-    - [Scripts](#scripts)
-      - [facebookads.py](#facebookadspy)
-      - [boreport.py](#boreportpy)
-  - [Authentication Handling With `auth`](#authentication-handling-with-auth)
-      - [meta.py](#metapy)
 
-
-## Data Retrieval via `datasets`
-
-### Setup
+## Setup
 
 1. Clone the repository
 
@@ -30,10 +21,36 @@ python -m venv .venv
 
 3. Install requirements
 ``` pwsh
-# To add later
+pip install -r requirements.txt
 ```
 
-### Configuration
+## Folder Descriptions
+1. data
+   1. Contains three subfolders: raw, interim, and processed.
+   2. Such structure gives a framework on how to think about data in the workflow.
+   3. Allows for a simple method of versioning.
+2. notebooks
+   1. All jupyter notebooks to be placed here.
+   2. Make use of modules and functions in `src` to speed up work.
+   3. Naming convention: {version}_{datetime}_{author}.ipynb
+3. references
+   1. Insert notes and other resource materials here
+   2. Documentation to be here.
+   3. Create subfolders as needed to maintain organized.
+4. reports
+   1. Final deliverables.
+   2. Visualizations to be kept separate.
+5. src
+   1. Analysis
+      1. Contains frequently-used code like resampling or plots
+   2. Auth
+      1. Authentication for data behind gateways
+   3. databases
+      1. CRUD operations for databases
+   4. datasets
+      1. Code to generate data
+   5. utilities
+      1. Frequently used code in areas of responsibility, not projects
 
 #### Meta Ads
 
@@ -47,50 +64,3 @@ In `/src/auth/config/meta_secrets.json`, include:
   "last_updated": "YYYY-MM-DD HH:MM"
 }
 ```
-
-
-### Scripts
-
-#### facebookads.py
-Fetches insights from Facebook Ads API and exports them as JSON.
-
-**Run**: 
-``` pwsh
-python .\src\datasets\facebookads.py
-```
-**Inputs**: Date range (`start_date`, `end_date`) and access token (auto-loaded from `meta_secrets.json`).
-
-**Output**: JSON file with insights data.
-
-**Usage Example**:
-
-1. Run `auth/meta.py` to refresh your access_token, if needed.
-2. Use `facebookads.py` to pull data from a selected date range. Find the exported json file in `data/raw` folder.
-
-
-#### boreport.py
-This Python script processes sales data for weekly analysis and management updates, focusing on direct and all channels.
-
-A VPN Connection to FortiClient is needed to access the shared folder where the BO Reports are located.
-
-**Features**:
-**Data Preparation**: Cleans and filters sales data for new acquisitions, focusing on specific sales channels and product lines.
-**Resampling**: Resamples sales data weekly, grouped by key metrics like channel, bandwidth, state, and contract period.
-**Usage**: To run the script, provide the file path to the sales data Excel file and call the main() function.
-
-## Authentication Handling With `auth`
-
-This module facilitates authentication for dealing with APIs involved in this repo. It includes meta.py for managing Facebook Ads API access tokens.
-
-#### meta.py
-Manages the Facebook API `access token`.
-
-**Run**:
-``` pwsh
-python .\src\datasets\facebookads.py
-```
-
-**Input** : Short-lived token from [Facebook Graph API Explorer](https://developers.facebook.com/tools/explorer/)
-
-**Output**: Saves a long-lived token and last updated timestamp in `\auth\config\meta_secrets.json`.
-
