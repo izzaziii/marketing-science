@@ -7,10 +7,12 @@ import pymongo.collection
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
-def load_boreportfull_to_mongodb(
+
+def read_boreportfull(
     filepath: str = r"Z:\FUNNEL with PROBABILITY TRACKING.xlsx",
 ):
     return pd.read_excel(filepath, usecols="B:BI", skiprows=2)
+
 
 def transform_to_json(dataframe: pd.DataFrame) -> list[dict]:
     """
@@ -31,6 +33,7 @@ def transform_to_json(dataframe: pd.DataFrame) -> list[dict]:
     result = dataframe.to_json(orient="records")
     return json.loads(result)
 
+
 def create_connection(
     database: str = "deep-diver", coll: str = "boreportfull"
 ) -> pymongo.collection.Collection:
@@ -49,6 +52,7 @@ def create_connection(
         return db[coll]
     except Exception as e:
         print(f"Failed to find specified collection. ErrorType: {e.__name__}.")
+
 
 def delete_from_coll(coll: pymongo.collection.Collection) -> None:
     """
@@ -97,6 +101,8 @@ def insert_to_coll(data: list, coll: pymongo.collection.Collection) -> None:
     except PyMongoError as e:
         print(f"Failed to insert data into MongoDB collection. Error: {e}")
         raise
+
+
 def create_df_with_aggregation(
     coll: pymongo.collection.Collection, pipeline: list
 ) -> pd.DataFrame:
@@ -255,7 +261,7 @@ def main():
 
 
 if __name__ == "__main__":
-    df = load_boreportfull_to_mongodb()
+    df = read_boreportfull()
     df.columns = df.iloc[0]
     df = df[1:].reset_index(drop=True)
     json_data = transform_to_json(df)
@@ -263,4 +269,3 @@ if __name__ == "__main__":
     delete_from_coll(coll)
     insert_to_coll(json_data, coll)
     extract_customer_info()
-    

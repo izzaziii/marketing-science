@@ -57,6 +57,8 @@ def get_long_lived_token(
         "fb_exchange_token": short_lived_token,
     }
     response = requests.get(url, params=params)
+    print("Response status code:", response.status_code)  # Debugging status code
+    print("Response body:", response.text)  # Debugging full response
     data = response.json()
     return data.get("access_token")
 
