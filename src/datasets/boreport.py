@@ -5,6 +5,11 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from databases.insert import transform_to_json
+from tqdm import tqdm
+import logging
+
+import pandas as pd
+from databases.insert import transform_to_json
 
 # Global configuration for paths
 CONFIG = {
@@ -15,30 +20,46 @@ CONFIG = {
     "output_folder": r"C:\Users\izzaz\Documents\2 Areas\GitHub\marketing-science\data\raw",
 }
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s]: %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
 
 def read_boreport(report_type: str) -> pd.DataFrame:
     """
     Reads the BO Report Excel file for the specified report type (FTTH or FTTO).
-
-    Parameters:
-        report_type (str): Type of report to read. Accepts "ftth" or "ftto".
-
-    Returns:
-        pd.DataFrame: DataFrame containing the data from the specified BO Report Excel file.
-
-    Raises:
-        ValueError: If an invalid report type is provided.
+    Includes progress bar and logging.
     """
     try:
         file_path = CONFIG["bo_reports"][report_type.lower()]
-        df = pd.read_excel(file_path)
-        print(f"Successfully loaded {report_type.upper()} report.")
+        logging.info(f"Loading {report_type.upper()} report from {file_path}...")
+
+        with tqdm(total=100, desc="Loading Excel") as pbar:
+            df = pd.read_excel(file_path)
+            pbar.update(100)
+
+        logging.info(f"Successfully loaded {report_type.upper()} report.")
         return df
     except KeyError:
         raise ValueError("Invalid report type. Please choose 'ftth' or 'ftto'.")
     except Exception as e:
-        print(f"Error reading the Excel file: {e}")
+        logging.error(f"Error reading the Excel file: {e}")
         return pd.DataFrame()
+
+
+def log_step_time(step_name: str, func, *args, **kwargs):
+    """
+    Utility to log the time taken by a specific step.
+    """
+    start_time = datetime.now()
+    logging.info(f"Starting step: {step_name}")
+    result = func(*args, **kwargs)
+    elapsed_time = (datetime.now() - start_time).total_seconds()
+    logging.info(f"Step '{step_name}' completed in {elapsed_time:.2f} seconds.")
+    return result
 
 
 def inspect_dataframe(df: pd.DataFrame) -> None:
@@ -180,10 +201,17 @@ def process_response(records: List[Dict[str, Any]]) -> None:
 if __name__ == "__main__":
     report_type = input("Enter report type (ftth/ftto): ").strip().lower()
     try:
-        df = read_boreport(report_type)
+        # Step 1: Read the BO Report
+        df = log_step_time("Read BO Report", read_boreport, report_type)
+
         if not df.empty:
+            # Step 2: Inspect the DataFrame
             prompt_inspect_dataframe(df)
-            records = transform_to_json(df)
-            process_response(records)
+
+            # Step 3: Transform Data to JSON
+            records = log_step_time("Transform Data", transform_to_json, df)
+
+            # Step 4: Process Response (Export/Print)
+            log_step_time("Process User Response", process_response, records)
     except ValueError as e:
-        print(e)
+        logging.error(e)
