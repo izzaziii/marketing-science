@@ -1,11 +1,6 @@
 # marketing-science
 A toolkit of reusable Python scripts for marketing data analysis and reporting. Designed to streamline workflows from data processing to visualization, with a modular structure for flexible, efficient, and maintainable analytics.
 
-- [marketing-science](#marketing-science)
-  - [Setup](#setup)
-  - [Folder Descriptions](#folder-descriptions)
-      - [Meta Ads](#meta-ads)
-
 ## Setup
 
 1. Clone the repository
@@ -21,7 +16,12 @@ python -m venv .venv
 
 3. Install requirements
 ``` pwsh
-pip install -r requirements.txt
+python pip install -r requirements.txt
+```
+
+4. Install source code files as modules
+``` pwsh
+python -m pip install .
 ```
 
 ## Folder Descriptions
@@ -29,6 +29,10 @@ pip install -r requirements.txt
    1. Contains three subfolders: raw, interim, and processed.
    2. Such structure gives a framework on how to think about data in the workflow.
    3. Allows for a simple method of versioning.
+   4. The `raw` folder contains data that is in its most raw format. The original, if you will. Treat this as immutable.
+   5. The `interim` folder contains files that are modified versions of the data in the `raw` folder.
+   6. The `processed` folder contains data that has been cleaned and is ready for insights or analysis.
+   7. Naming convention: {version}_{datetime}_{author}_{description).{filetype}
 2. notebooks
    1. All jupyter notebooks to be placed here.
    2. Make use of modules and functions in `src` to speed up work.
@@ -48,19 +52,6 @@ pip install -r requirements.txt
    3. databases
       1. CRUD operations for databases
    4. datasets
-      1. Code to generate data
+      1. Code to generate data. Currently available: meta graph API, Google Analytics Data API, Google Ads API, and Pandas.
    5. utilities
       1. Frequently used code in areas of responsibility, not projects
-
-#### Meta Ads
-
-In `/src/auth/config/meta_secrets.json`, include:
-
-``` json
-{
-  "app_id": "your_app_id",
-  "app_secret": "your_app_secret",
-  "access_token": "your_access_token",
-  "last_updated": "YYYY-MM-DD HH:MM"
-}
-```
