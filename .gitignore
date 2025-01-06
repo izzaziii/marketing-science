@@ -38,6 +38,7 @@ Thumbs.db
 # Custom
 deep-diver.json
 weeklyreport.ipynb
+oauth_client_deepdiver.json
 
 # Egg-info files
 *.egg-info/
