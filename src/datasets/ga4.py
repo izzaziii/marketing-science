@@ -1,7 +1,6 @@
 import json
 import os
 from datetime import datetime
-from typing import List
 
 import google.analytics.data_v1beta.types as t
 import pandas as pd
@@ -38,24 +37,72 @@ def generate_client(path_to_service_account_key_file: str) -> BetaAnalyticsDataC
         raise ValueError(f"Error generating client: {e}")
 
 
+def get_row_count(response: t.RunReportResponse) -> int:
+    """Returns the row count of the response object
+
+    Args:
+        response (t.RunReportResponse): Response object from the Data API
+
+    Returns:
+        int: Number of rows within said response
+    """
+    try:
+        return response.row_count
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def get_offsets_list(row_count: int, limit: int) -> list[int]:
+    """Return list of offsets for pagination handling of RunReportResponse
+
+    Args:
+        row_count (int): Number of rows. Taken from response.row_count
+        limit (int): Limit of rows to pull from RunReportResponse
+
+    Returns:
+        list[int]: List of integers for the offset
+    """
+    if row_count < 0:
+        raise ValueError("Row Count should be greater than 0.")
+
+    if limit < 1:
+        raise ValueError("Limit should be 1 or more.")
+
+    pages: int = (
+        (row_count // limit) + 1 if row_count % limit != 0 else row_count // limit
+    )
+    return [limit * i for i in range(pages)]
+
+
 def generate_report_request(
     property_id: int,
-    dimensions: List[str],
-    metrics: List[str],
+    dimensions: list[str],
+    metrics: list[str],
     start_date: str,
     end_date: str,
+    offset: int = 0,
+    limit: int = 100000,
     filter_expressions=None,
 ) -> t.RunReportRequest:
     """
-    Constructs a RunReportRequest object for querying the GA4 API.
+    Construct a RunReportRequest object for the Google Analytics 4 Data API.
+
+    Description: This function configures and returns a RunReportRequest for GA4. It sets up:
+    - The GA4 property (by property ID).
+    - Dimensions and metrics to retrieve.
+    - Date ranges for the report.
+    - Pagination parameters (limit and offset).
+    - An optional filter expression for more granular queries.
 
     Args:
         property_id (int): GA4 property ID.
-        dimensions (List[str]): List of dimensions to break metrics by. Get this from: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
-        metrics (List[str]): List of metrics to retrieve. Get this from: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#metrics
+        dimensions (list[str]): list of dimensions to break metrics by. Get this from: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
+        metrics (list[str]): List of metrics to retrieve. Get this from: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#metrics
         start_date (str): Start date in yyyy-mm-dd format.
         end_date (str): End date in yyyy-mm-dd format.
-
+        offset (int): Used in pagination, when fetching rows greater than the limit that is being called. Typically Data API has a maximum limit of 250,000 that you can specify, but the default is 10,000.
+        limit (int): The limit of rows to fetch.
+        filter_expressions (None): Used when filtering the query. Future iterations will have an Expressions builder.
     Returns:
         t.RunReportRequest: Configured RunReportRequest object.
     """
@@ -66,19 +113,22 @@ def generate_report_request(
             metrics=[t.Metric(name=metric) for metric in metrics],
             date_ranges=[t.DateRange(start_date=start_date, end_date=end_date)],
             dimension_filter=filter_expressions,
-            limit=250000,
+            limit=limit,
+            offset=offset,
         )
     except Exception as e:
-        raise ValueError(f"Error creating report request: {e}")
+        print(f"Error creating report request: {e}")
 
 
 def fetch_report(
-    dimensions: List[str],
+    dimensions: list[str],
     start_date: str,
     end_date: str,
     property_id: int,
     path_to_service_account_key_file: str,
-    metrics: List[str] = ["totalUsers"],
+    metrics: list[str] = ["totalUsers"],
+    offset: int = 0,
+    limit: int = 100000,
     filter_expressions=None,
 ) -> t.RunReportResponse:
     """
@@ -91,6 +141,8 @@ def fetch_report(
         property_id (int): GA4 property ID.
         path_to_service_account_key_file (str): Path to the service account JSON key file.
         metrics (List[str], optional): List of metrics to retrieve. Defaults to ["totalUsers"].
+        offset (int): Used in pagination.
+        limit (int): Sets the limit of rows to be pulled in the query.
 
     Returns:
         t.RunReportResponse: API response containing the report data.
@@ -101,7 +153,14 @@ def fetch_report(
     try:
         client = generate_client(path_to_service_account_key_file)
         request = generate_report_request(
-            property_id, dimensions, metrics, start_date, end_date, filter_expressions
+            property_id,
+            dimensions,
+            metrics,
+            start_date,
+            end_date,
+            offset,
+            limit,
+            filter_expressions,
         )
         response = client.run_report(request)
 
@@ -142,7 +201,7 @@ def process_response(response: t.RunReportResponse) -> pd.DataFrame:
         raise ValueError(f"Error processing response: {e}")
 
 
-def groupby_dataframe(df: pd.DataFrame, col: List[str]) -> pd.DataFrame:
+def groupby_dataframe(df: pd.DataFrame, dimensions: list[str]) -> pd.DataFrame:
     """
     Groups the DataFrame for analysis (e.g., typecasting, grouping).
 
@@ -162,7 +221,12 @@ def groupby_dataframe(df: pd.DataFrame, col: List[str]) -> pd.DataFrame:
 
         # Convert totalUsers to integer and group by dimension
         df["totalUsers"] = df["totalUsers"].astype("int64")
-        return df.groupby(col).totalUsers.sum().sort_values(ascending=False)
+        return (
+            df.groupby(dimensions)
+            .totalUsers.sum()
+            .sort_values(ascending=False)
+            .reset_index()
+        )
     except Exception as e:
         raise RuntimeError(f"Error processing DataFrame: {e}")
 
@@ -285,7 +349,7 @@ def metrics_handler() -> list[str]:
     Handles user input for metrics and allows them to add multiple metrics.
 
     Returns:
-        list[str]: A list of dimensions entered by the user.
+        list[str]: A list of metrics entered by the user.
     """
     metrics: list[str] = []
 
@@ -294,7 +358,7 @@ def metrics_handler() -> list[str]:
 
         if user_input:
             metrics.append(user_input)
-            print(f"Dimension '{user_input}' added.")
+            print(f"Metric '{user_input}' added.")
         else:
             print("Invalid input. Please enter a valid metric.")
 
@@ -306,37 +370,138 @@ def metrics_handler() -> list[str]:
     return metrics
 
 
-def main():
-    """
-    Main function to pull the GA4 report fetching and processing workflow.
-    """
+def gather_parameters(
+    limit: int = 100000,
+) -> tuple[list[str], list[str], str, str, int, str, int]:
+    """Collects input from the user to pass to the main function"""
     dimensions: list[str] = dimensions_handler()
     metrics: list[str] = metrics_handler()
     dates: dict = date_handler()
     start_date: str = dates["start_date"]
     end_date: str = dates["end_date"]
-    property_id: int = 307329293  # Property ID of time GA4
-    path_to_service_account_key_file: str = "C:\\Users\\izzaz\\Documents\\2 Areas\\GitHub\\marketing-science\\deep-diver.json"
+    property_id: int = 307329293  # Should come from a config file
+    path_to_service_account_key_file: str = "C:\\Users\\izzaz\\Documents\\2 Areas\\GitHub\\marketing-science\\deep-diver.json"  # Should come from config file
+    limit: int = limit
+    return (
+        dimensions,
+        metrics,
+        start_date,
+        end_date,
+        property_id,
+        path_to_service_account_key_file,
+        limit,
+    )
 
-    try:
-        # Fetch the report
-        response: t.RunReportResponse = fetch_report(
-            dimensions,
-            start_date,
-            end_date,
-            property_id,
-            path_to_service_account_key_file,
-            metrics,
+
+def run_initial_report(
+    property_id,
+    dimensions,
+    metrics,
+    start_date,
+    end_date,
+    limit,
+    path_to_service_account_key_file,
+) -> t.RunReportResponse:
+    "Generates an initial RunReportRequest, executes it, and returns the response."
+    request: t.RunReportRequest = generate_report_request(
+        property_id,
+        dimensions,
+        metrics,
+        start_date,
+        end_date,
+        limit,
+    )
+    return generate_client(path_to_service_account_key_file).run_report(request)
+
+
+def get_pagination_info(response: t.RunReportResponse, limit) -> tuple[int, int]:
+    """Gets the pagination info for pagination logic"""
+    row_count: int = get_row_count(response)
+    pages: int = len(get_offsets_list(row_count, limit))
+    return (row_count, pages)
+
+
+def main():
+    """
+    Main function to pull the GA4 report fetching and processing workflow.
+    """
+    # Gather the variables
+    limit: int = 100000
+    (
+        dimensions,
+        metrics,
+        start_date,
+        end_date,
+        property_id,
+        path_to_service_account_key_file,
+        limit,
+    ) = gather_parameters()
+
+    # Create the initial request and response
+    initial_response: t.RunReportResponse = run_initial_report(
+        property_id,
+        dimensions,
+        metrics,
+        start_date,
+        end_date,
+        limit,
+        path_to_service_account_key_file,
+    )
+
+    # Get info for the pagination logic
+    row_count, pages = get_pagination_info(initial_response, limit)
+
+    # Ask if would like to continue
+    user_input: str = (
+        input(
+            f"Number of rows to process: {row_count}.\nPages to process with limit of {limit}: {pages}\nProceed? (y/n)\n"
         )
+        .strip()
+        .lower()
+    )
 
-        # Process the response into a DataFrame
-        df: pd.DataFrame = process_response(response)
+    # Handle pagination
+    if user_input != "n":
+        # Run checks to see if row_count > limit
+        pagination_status: bool = True if row_count > limit else False
 
-        # Export the df
-        transformed_df: pd.DataFrame = transform_to_json(df)
-        export_to_json(transformed_df)
-    except Exception as e:
-        print(f"Error: {e}")
+        # Run conditionals
+        if pagination_status:
+            # Get offsets list
+            offsets = get_offsets_list(row_count, limit)
+
+            # Loop through offsets
+            data: list[pd.DataFrame] = []
+            for offset in offsets:
+                # Create the request and get the response of the API
+                response: t.RunReportResponse = fetch_report(
+                    dimensions,
+                    start_date,
+                    end_date,
+                    property_id,
+                    path_to_service_account_key_file,
+                    metrics,
+                    offset,
+                    limit,
+                )
+                # Process the rows
+                df: pd.DataFrame = groupby_dataframe(
+                    process_response(response), dimensions
+                )
+                data.append(df)
+            results: pd.DataFrame = pd.concat(data)
+
+            transformed_df: list[dict] = transform_to_json(results)
+            export_to_json(transformed_df, "ga4test")
+        else:
+            # Proceed with processing the rows
+            results: pd.DataFrame = groupby_dataframe(
+                process_response(initial_response), dimensions
+            )
+            transformed_df: list[dict] = transform_to_json(results)
+            export_to_json(transformed_df, "ga4test")
+    else:
+        print("Aborted processing.")
 
 
 if __name__ == "__main__":
